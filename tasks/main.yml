@@ -39,9 +39,13 @@
   when: hetzner_installimage_run
 
 - name: Include rescue mode handling tasks
-  include: rescuemode.yml
+  import_tasks: rescuemode.yml
+  when: hetzner_installimage_run and not ansible_check_mode
+
+- name: Include disk wiping tasks
+  import_tasks: wipe-drives.yml
   when: hetzner_installimage_run and not ansible_check_mode
 
 - name: Include installimage handling tasks
-  include: installimage.yml
+  import_tasks: installimage.yml
   when: hetzner_installimage_run and not ansible_check_mode

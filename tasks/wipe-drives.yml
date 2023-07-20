@@ -1,0 +1,42 @@
+---
+- name: gather facts
+  setup:
+
+- name: set raid drives
+  set_fact:
+    raid_drives_to_wipe: "{{ ansible_devices.keys() | select('match','md*') }}"
+
+- name: Show raid drives
+  debug:
+    msg: "{{ raid_drives_to_wipe }}"
+
+- name: set drives
+  set_fact:
+    drives_to_wipe: "{{ ansible_devices.keys() | select('match','nvme*') }}"
+
+- name: Show drives to wipe
+  debug:
+    msg: "Drives to wipe: {{ drives_to_wipe }}"
+
+- name: Confirm wiping all drives
+  pause:
+    prompt: "Really wiping all drives (yes/no) ?"
+  register: confirm_wipe_drives
+  run_once: true
+  delegate_to: localhost
+
+- name: Set default value for confirm_wipe_drives
+  set_fact:
+    do_wipe_drives: "{{ confirm_wipe_drives.user_input | bool }}"
+
+- name: Stop raid
+  command: mdadm --stop /dev/{{ item }}
+  loop: "{{ raid_drives_to_wipe }}"
+  when: do_wipe_drives
+  ignore_errors: true
+
+- name: Wipe drives
+  command: "blkdiscard /dev/{{item}}"
+  loop: "{{ drives_to_wipe }}"
+  when: do_wipe_drives
+  ignore_errors: true
